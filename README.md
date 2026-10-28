@@ -63,8 +63,8 @@ Same working style as the real team: small tickets, one branch per ticket, a pul
 - [ ] 13. Write the API contract first: what each request accepts and returns
 - [ ] 14. `leave_requests` table, then `POST /api/leaves` (apply for leave)
 - [ ] 15. `GET /api/leaves` (list leaves)
-- [ ] 16. React: set up the frontend, then the employee list screen
-- [ ] 17. React: apply-leave form and leave list screen
+- [ x] 16. React: set up the frontend, then the employee list screen
+- [x ] 17. React: apply-leave form and leave list screen
 - [ ] 18. Backend tests, then frontend tests
 
 ### Sprint 3: Finish

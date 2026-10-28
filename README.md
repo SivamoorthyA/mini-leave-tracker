@@ -42,14 +42,14 @@ Same working style as the real team: small tickets, one branch per ticket, a pul
 
 ### Sprint 0: Setup (learn the tools)
 
-- [ ] 1. Docker Desktop is running (Engine running, green)
-- [ ] 2. `java -version` shows 21
-- [ ] 3. `node --version` works, `git --version` works
-- [ ] 4. Create a GitHub account (use sivamoorthy477@gmail.com)
-- [ ] 5. `docker run hello-world` works (our first container)
-- [ ] 6. Make this folder a Git repository (`git init`)
-- [ ] 7. Create an empty repository on GitHub and push this README
-- [ ] 8. Practice pull request: change the README on a branch, open a PR, merge it
+- [x] 1. Docker Desktop is running (Engine running, green)
+- [x] 2. `java -version` shows 21
+- [x] 3. `node --version` works, `git --version` works
+- [x] 4. Create a GitHub account (use sivamoorthy477@gmail.com)
+- [x] 5. `docker run hello-world` works (our first container)
+- [x] 6. Make this folder a Git repository (`git init`)
+- [x] 7. Create an empty repository on GitHub and push this README
+- [x] 8. Practice pull request: change the README on a branch, open a PR, merge it
 
 ### Sprint 1: Foundation (backend)
 
@@ -91,3 +91,6 @@ Same working style as the real team: small tickets, one branch per ticket, a pul
 
 - You type the commands. The AI explains first and asks before it creates or installs anything.
 - Never commit passwords to Git.
+
+
+-----------

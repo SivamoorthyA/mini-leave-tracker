@@ -53,11 +53,11 @@ Same working style as the real team: small tickets, one branch per ticket, a pul
 
 ### Sprint 1: Foundation (backend)
 
-- [ ] 9. Create the Spring Boot project in `backend/`
-- [ ] 10. Run PostgreSQL in Docker (`docker-compose.yml`) and connect the backend to it
-- [ ] 11. First migration: create the `employees` table
-- [ ] 12. `GET /api/employees` returns employees from the database
-
+- [X] 9. Create the Spring Boot project in `backend/`
+- [X] 10. Run PostgreSQL in Docker (`docker-compose.yml`) and connect the backend to it
+- [X] 11. First migration: create the `employees` table
+- [X] 12. `GET /api/employees` returns employees from the database
+----------------------------------------------------------
 ### Sprint 2: First module (leave)
 
 - [ ] 13. Write the API contract first: what each request accepts and returns

@@ -52,6 +52,10 @@ public class LeaveRequest {
 		this.status = LeaveStatus.PENDING;
 	}
 
+	public void changeStatus(LeaveStatus newStatus) {
+		this.status = newStatus;
+	}
+
 	public UUID getId() {
 		return id;
 	}

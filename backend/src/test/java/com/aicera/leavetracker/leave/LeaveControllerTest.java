@@ -3,6 +3,7 @@ package com.aicera.leavetracker.leave;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.aicera.leavetracker.common.ConflictException;
 import com.aicera.leavetracker.common.NotFoundException;
 
 @WebMvcTest(LeaveController.class)
@@ -87,6 +89,57 @@ class LeaveControllerTest {
 				.content(body("SICK", "2026-11-02", "2026-11-03")))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.status").value(404));
+	}
+
+	@Test
+	void patchStatusReturns200WithUpdatedLeave() throws Exception {
+		UUID leaveId = UUID.randomUUID();
+		var approved = new LeaveResponse(leaveId, EMPLOYEE_ID, LeaveType.ANNUAL,
+				LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 4), null, LeaveStatus.APPROVED);
+		when(leaveService.updateStatus(leaveId, LeaveStatus.APPROVED)).thenReturn(approved);
+
+		mockMvc.perform(patch("/api/leaves/" + leaveId + "/status").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"status\":\"APPROVED\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("APPROVED"));
+	}
+
+	@Test
+	void patchStatusForUnknownLeaveReturns404() throws Exception {
+		UUID leaveId = UUID.randomUUID();
+		when(leaveService.updateStatus(leaveId, LeaveStatus.APPROVED))
+				.thenThrow(new NotFoundException("Leave request " + leaveId + " not found"));
+
+		mockMvc.perform(patch("/api/leaves/" + leaveId + "/status").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"status\":\"APPROVED\"}"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void patchStatusOnDecidedLeaveReturns409() throws Exception {
+		UUID leaveId = UUID.randomUUID();
+		when(leaveService.updateStatus(leaveId, LeaveStatus.REJECTED))
+				.thenThrow(new ConflictException("Leave request is already APPROVED"));
+
+		mockMvc.perform(patch("/api/leaves/" + leaveId + "/status").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"status\":\"REJECTED\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.status").value(409));
+	}
+
+	@Test
+	void patchStatusWithoutStatusReturns400() throws Exception {
+		mockMvc.perform(patch("/api/leaves/" + UUID.randomUUID() + "/status").contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void patchStatusWithInvalidIdReturns400() throws Exception {
+		mockMvc.perform(patch("/api/leaves/not-a-uuid/status").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"status\":\"APPROVED\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400));
 	}
 
 	@Test

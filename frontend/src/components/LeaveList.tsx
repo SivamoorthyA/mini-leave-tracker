@@ -3,21 +3,27 @@ import { fetchEmployees } from '../api/employees'
 import { fetchLeaves } from '../api/leaves'
 import type { Employee, Leave } from '../types'
 
-export function LeaveList() {
+type LeaveListProps = {
+  leaveVersion: number
+}
+
+export function LeaveList({ leaveVersion }: LeaveListProps) {
   const [leaves, setLeaves] = useState<Leave[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Runs on first load, and again each time leaveVersion changes (a new leave was saved).
   useEffect(() => {
     Promise.all([fetchLeaves(), fetchEmployees()])
       .then(([leaveList, employeeList]) => {
+        setError('')
         setLeaves(leaveList)
         setEmployees(employeeList)
       })
       .catch((err) => setError(String(err)))
       .finally(() => setLoading(false))
-  }, [])
+  }, [leaveVersion])
 
   function employeeName(employeeId: string) {
     return employees.find((employee) => employee.id === employeeId)?.name ?? employeeId

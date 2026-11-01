@@ -13,7 +13,11 @@ const emptyForm: NewLeave = {
   reason: '',
 }
 
-export function LeaveForm() {
+type LeaveFormProps = {
+  onCreated: () => void
+}
+
+export function LeaveForm({ onCreated }: LeaveFormProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [form, setForm] = useState<NewLeave>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
@@ -42,6 +46,7 @@ export function LeaveForm() {
       const saved = await createLeave(form)
       setSuccess(`Leave request saved with status ${saved.status}`)
       setForm((current) => ({ ...emptyForm, employeeId: current.employeeId }))
+      onCreated()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

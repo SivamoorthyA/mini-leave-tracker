@@ -1,11 +1,14 @@
 import { EmployeeList } from './components/EmployeeList'
 import { LeaveForm } from './components/LeaveForm'
+import { LeaveList } from './components/LeaveList'
 
 function App() {
   return (
     <main>
       <h1>Mini Leave Tracker</h1>
       <LeaveForm />
+      <h2>Leave requests</h2>
+      <LeaveList />
       <h2>Employees</h2>
       <EmployeeList />
     </main>

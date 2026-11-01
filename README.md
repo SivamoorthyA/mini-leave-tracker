@@ -8,89 +8,152 @@ This project is separate from the real HRMS. Nothing here can break it.
 
 - Employees list (name, email)
 - Apply for leave (type, start date, end date, reason)
-- Each leave has a status: Pending, Approved or Rejected
-- A manager can approve or reject
+- Leave list with status: Pending, Approved or Rejected
+- Approve or reject a pending leave (a decision is final)
 
-## Tools (same as the real project)
+## Tools
 
 | Part | Tool | Folder |
 |---|---|---|
-| Database | PostgreSQL, running in Docker | docker-compose.yml |
-| Backend (server) | Java 21 + Spring Boot 3 | backend/ |
-| Frontend (screens) | React + TypeScript + Vite | frontend/ |
-| Teamwork | Git + GitHub | whole project |
+| Database | PostgreSQL 16, running in Docker | `docker-compose.yml` |
+| Database changes | Flyway migrations | `backend/src/main/resources/db/migration/` |
+| Backend (server) | Java 21 + Spring Boot 4.0.9 | `backend/` |
+| Frontend (screens) | React 19 + TypeScript + Vite | `frontend/` |
+| Automatic checks | GitHub Actions | `.github/workflows/ci.yml` |
+| Teamwork | Git + GitHub, pull requests | whole project |
 
 ## How the parts talk
 
 ```
-Browser (React screens)  ->  Backend (Spring Boot API)  ->  Database (PostgreSQL)
-      what you see              the rules + the "brain"         where data is saved
+Browser (React, port 5173)  ->  Backend (Spring Boot API, port 8080)  ->  PostgreSQL (Docker, port 5432)
+      what you see                  the rules + the "brain"                   where data is saved
 ```
 
-## Build order: backend first, then frontend
+Backend layers: **Controller** (the URL) -> **Service** (the rules) -> **Repository** (the database).
 
-We start with the database and backend, then add the screens. Why:
-- The screens need data from the backend. Without it they show nothing.
-- We can test the backend alone (browser or Postman) before any screen exists.
-- It matches the real plan: Sprint 1 is the backend foundation.
+## Before you start (install once)
 
-(Some teams start from the frontend with fake data. That is also valid. See the chat explanation.)
+| Tool | Version |
+|---|---|
+| Git | any recent |
+| Java JDK | 21 |
+| Node.js | 24 (the real HRMS plan says 22, both work) |
+| Docker Desktop | running (green "Engine running") |
 
-## Plan
+## Run it on your computer
 
-Same working style as the real team: small tickets, one branch per ticket, a pull request for each, and a review.
+Open three terminals, one for each step.
 
-### Sprint 0: Setup (learn the tools)
+1. **Database** (project root):
+   ```
+   docker compose up -d
+   ```
+2. **Backend** (port 8080). Flyway creates the tables on first start:
+   ```
+   cd backend
+   .\mvnw.cmd spring-boot:run
+   ```
+3. **Frontend** (port 5173). Run `npm install` only the first time:
+   ```
+   cd frontend
+   npm install
+   npm run dev
+   ```
+4. Open `http://localhost:5173`.
 
-- [x] 1. Docker Desktop is running (Engine running, green)
-- [x] 2. `java -version` shows 21
-- [x] 3. `node --version` works, `git --version` works
-- [x] 4. Create a GitHub account (use sivamoorthy477@gmail.com)
-- [x] 5. `docker run hello-world` works (our first container)
-- [x] 6. Make this folder a Git repository (`git init`)
-- [x] 7. Create an empty repository on GitHub and push this README
-- [x] 8. Practice pull request: change the README on a branch, open a PR, merge it
+Stop the backend and frontend with Ctrl+C. Stop the database with `docker compose down` (your data stays). `docker compose down -v` also deletes the data.
+
+## Run the checks
+
+```
+cd backend
+.\mvnw.cmd test            # needs the database running
+
+cd frontend
+npm run lint
+npm run build              # also runs the TypeScript type check
+```
+
+GitHub runs the same checks on every pull request (see `.github/workflows/ci.yml`).
+
+## API
+
+The contract is written first, before the code: [backend/docs/API.md](backend/docs/API.md).
+
+| Endpoint | What it does |
+|---|---|
+| `GET /api/employees` | List employees |
+| `POST /api/leaves` | Apply for leave (starts as PENDING) |
+| `GET /api/leaves` | List leave requests |
+| `PATCH /api/leaves/{id}/status` | Approve or reject a pending leave |
+
+## Database changes (Flyway)
+
+- Every change is a new numbered file: `V1__...sql`, `V2__...sql`, and so on.
+- **Never edit a migration that has already run.** Add a new one. Flyway stores a checksum and refuses to start if an old file changed.
+- Two people must not use the same version number. Check `main` for the highest number before you add one.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `Cannot connect to the Docker daemon` | Open Docker Desktop and wait for "Engine running" |
+| Backend says it cannot connect to the database | Run `docker compose up -d` and check `docker ps` |
+| `port 5432 is already in use` | Another PostgreSQL is running on your PC. Stop it, or change the port in `docker-compose.yml` and `application.properties` |
+| `invalid value for parameter "TimeZone": "Asia/Calcutta"` | Already handled in `LeaveTrackerApplication.java` (the app uses UTC) |
+| Browser says "blocked by CORS policy" | The frontend must run on `http://localhost:5173`, the address allowed in `application.properties` |
+
+The database password in `docker-compose.yml` and `application.properties` is for local practice only. Never commit real passwords.
+
+## What was built (each line is a merged pull request)
+
+### Sprint 0: Setup
+- [x] Docker, Java 21, Node and Git installed and working
+- [x] GitHub account and repository (PR #1 was the practice pull request)
 
 ### Sprint 1: Foundation (backend)
+- [x] Spring Boot project in `backend/` (PR #2)
+- [x] PostgreSQL in Docker, backend connected (PR #3)
+- [x] First migration: `employees` table (PR #4)
+- [x] `GET /api/employees` (PR #5)
 
-- [X] 9. Create the Spring Boot project in `backend/`
-- [X] 10. Run PostgreSQL in Docker (`docker-compose.yml`) and connect the backend to it
-- [X] 11. First migration: create the `employees` table
-- [X] 12. `GET /api/employees` returns employees from the database
-----------------------------------------------------------
-### Sprint 2: First module (leave)
-
-- [ ] 13. Write the API contract first: what each request accepts and returns
-- [ ] 14. `leave_requests` table, then `POST /api/leaves` (apply for leave)
-- [ ] 15. `GET /api/leaves` (list leaves)
-- [ x] 16. React: set up the frontend, then the employee list screen
-- [x ] 17. React: apply-leave form and leave list screen
-- [ ] 18. Backend tests, then frontend tests
+### Sprint 2: Leave module
+- [x] Leave API contract (PR #7)
+- [x] `leave_requests` table (PR #8)
+- [x] `POST` and `GET /api/leaves` with validation and standard errors (PR #9)
+- [x] Backend tests (PR #10)
+- [x] React project with Vite (PR #11)
+- [x] CORS, so the browser may call the API (PR #12)
+- [x] Employees screen (PR #13)
+- [x] Apply-leave form (PR #14)
+- [x] Leave list (PR #15), refreshing after a new leave (PR #16)
 
 ### Sprint 3: Finish
+- [x] Approve and reject: backend and buttons (PR #17)
+- [x] Automatic checks on GitHub, CI (PR #18)
+- [x] README brought up to date (this pull request)
+- [ ] Frontend tests (Vitest and React Testing Library)
+- [ ] Protect `main` on GitHub: require a pull request and green checks
+- [ ] Styling (plain CSS first, a UI library later)
+- [ ] Demo: show the finished app running
 
-- [ ] 19. Approve / reject (status changes)
-- [ ] 20. Show errors nicely (bad dates, missing fields)
-- [ ] 21. Automatic checks on GitHub (CI) that build and test
-- [ ] 22. Demo: show the finished app running
+### Not built on purpose
+Login and roles, payroll, leave balances, file uploads. The real HRMS plan covers these.
 
 ## Steps for every ticket
 
 1. Pick a ticket. Write it down.
-2. Agree what the API accepts and returns (for API tickets).
-3. Make a branch: `git checkout -b feature/9-create-backend`
+2. Agree what the API accepts and returns (for API tickets). Update `backend/docs/API.md` first.
+3. Make a branch: `git switch -c feature/28-short-name`
 4. Ask the AI for a plan before any code. Agree to it.
 5. Build in layers: database, backend, screen, tests.
 6. Ask the AI to explain every file it changed. If you can't say it in one sentence, ask again.
-7. Run it and test it by hand.
-8. Commit with a clear message, e.g. `feat(leave): save leave requests`
-9. Push, open a pull request on GitHub.
-10. Review and merge (Squash and merge). Delete the branch. Tick the box above.
+7. Run it and test it by hand. Run the checks above.
+8. Commit with a clear message, e.g. `feat(leave): save leave requests`. Add files by folder (`git add backend`), not `git add .`, so one pull request holds one kind of change.
+9. Push, open a pull request on GitHub. Wait for the green checks.
+10. Review and merge (Squash and merge). Delete the branch. Then `git switch main` and `git pull`.
 
 ## Rules for learning
 
 - You type the commands. The AI explains first and asks before it creates or installs anything.
 - Never commit passwords to Git.
-
-
------------

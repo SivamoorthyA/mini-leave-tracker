@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aicera.leavetracker.common.BadRequestException;
+import com.aicera.leavetracker.common.ConflictException;
 import com.aicera.leavetracker.common.NotFoundException;
 import com.aicera.leavetracker.employee.EmployeeRepository;
 
@@ -81,6 +83,63 @@ class LeaveServiceTest {
 		assertThatThrownBy(() -> leaveService.create(request))
 				.isInstanceOf(NotFoundException.class);
 		verify(leaveRequestRepository, never()).save(any());
+	}
+
+	private LeaveRequest pendingLeave() {
+		return new LeaveRequest(employeeId, LeaveType.ANNUAL,
+				LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 4), null);
+	}
+
+	@Test
+	void updateStatusApprovesPendingLeave() {
+		UUID leaveId = UUID.randomUUID();
+		when(leaveRequestRepository.findById(leaveId)).thenReturn(Optional.of(pendingLeave()));
+		when(leaveRequestRepository.save(any(LeaveRequest.class))).thenAnswer(call -> call.getArgument(0));
+
+		LeaveResponse response = leaveService.updateStatus(leaveId, LeaveStatus.APPROVED);
+
+		assertThat(response.status()).isEqualTo(LeaveStatus.APPROVED);
+	}
+
+	@Test
+	void updateStatusRejectsPendingLeave() {
+		UUID leaveId = UUID.randomUUID();
+		when(leaveRequestRepository.findById(leaveId)).thenReturn(Optional.of(pendingLeave()));
+		when(leaveRequestRepository.save(any(LeaveRequest.class))).thenAnswer(call -> call.getArgument(0));
+
+		LeaveResponse response = leaveService.updateStatus(leaveId, LeaveStatus.REJECTED);
+
+		assertThat(response.status()).isEqualTo(LeaveStatus.REJECTED);
+	}
+
+	@Test
+	void updateStatusCannotChangeADecidedLeave() {
+		UUID leaveId = UUID.randomUUID();
+		LeaveRequest decided = pendingLeave();
+		decided.changeStatus(LeaveStatus.APPROVED);
+		when(leaveRequestRepository.findById(leaveId)).thenReturn(Optional.of(decided));
+
+		assertThatThrownBy(() -> leaveService.updateStatus(leaveId, LeaveStatus.REJECTED))
+				.isInstanceOf(ConflictException.class);
+		verify(leaveRequestRepository, never()).save(any());
+	}
+
+	@Test
+	void updateStatusCannotSetBackToPending() {
+		UUID leaveId = UUID.randomUUID();
+
+		assertThatThrownBy(() -> leaveService.updateStatus(leaveId, LeaveStatus.PENDING))
+				.isInstanceOf(BadRequestException.class);
+		verify(leaveRequestRepository, never()).save(any());
+	}
+
+	@Test
+	void updateStatusFailsForUnknownLeave() {
+		UUID leaveId = UUID.randomUUID();
+		when(leaveRequestRepository.findById(leaveId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> leaveService.updateStatus(leaveId, LeaveStatus.APPROVED))
+				.isInstanceOf(NotFoundException.class);
 	}
 
 	@Test

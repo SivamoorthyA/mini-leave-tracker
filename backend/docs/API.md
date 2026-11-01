@@ -75,6 +75,26 @@ Success: `200 OK`. Returns a list of LeaveRequest. The list is empty (`[]`) when
 ]
 ```
 
+### PATCH /api/leaves/{id}/status: approve or reject
+
+Request body:
+
+```json
+{ "status": "APPROVED" }
+```
+
+`status` must be `APPROVED` or `REJECTED`.
+
+Success: `200 OK`. Returns the updated LeaveRequest with the new status.
+
+Errors:
+
+| Status | When |
+|---|---|
+| 400 Bad Request | `status` is missing, is not a known value, or is `PENDING`; or `{id}` is not a valid UUID |
+| 404 Not Found | No leave request has this id |
+| 409 Conflict | The leave was already approved or rejected. A decision cannot be changed. |
+
 ## Error response shape
 
 Every error uses the same body, so the frontend can show it the same way:
@@ -91,4 +111,5 @@ Every error uses the same body, so the frontend can show it the same way:
 
 - A new leave request always starts as `PENDING`. The client cannot set the status.
 - `endDate` must be on or after `startDate`. A one-day leave has the same start and end date.
-- Approve and reject (`PATCH /api/leaves/{id}/status`) are planned for Sprint 3 and are not part of this contract yet.
+- Only a `PENDING` leave can be approved or rejected. Once decided, the status is final.
+- The client may only set `APPROVED` or `REJECTED`. It can never set a leave back to `PENDING`.
